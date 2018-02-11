@@ -1,0 +1,122 @@
+﻿
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>模拟专题页面</title>
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+    <script src="https://cdn.bootcss.com/vue-resource/1.3.4/vue-resource.js"></script>
+    <style>
+        li {
+            list-style: none;
+            float: left;
+            margin-left: 20px;
+        }
+
+        .list {
+            width: 810px;
+            height: auto;
+            margin-left: 50px;
+        }
+
+        .list_children {
+            border: 1px solid red;
+            width: 200px;
+            height: 260px;
+            float: left;
+        }
+
+        img {
+            width: 200px;
+            height: 210px;
+        }
+    </style>
+</head>
+<body>
+    <h3>Demo</h3>
+    <div id="main">
+        <ul>
+            <li v-for="todo in types" v-on:click="LoadProds">
+                <router-link :to="'/Home.html?id='+todo.id+'&order='+order">{{todo.name}}</router-link>
+            </li>
+        </ul>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <ul>
+            <li v-for="todo in orders" v-on:click="LoadProds">
+                <router-link :to="'/Home.html?id='+type+'&order='+todo.id">{{todo.name}}</router-link>
+            </li>
+        </ul>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <br /><br />
+        <ol>
+            <li>类型的值：{{type}}</li>
+            <li>排序的值：{{order}}</li>
+        </ol>
+        <br /><br />
+        <div class="list">
+            <prodlist></prodlist>
+            <div class="list_children" v-for="t2 in prods">
+                <a :href="t2.href"><img :src="t2.imageUrl" /></a>
+                <span>{{t2.title}}</span>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
+<script>
+    //定义以及声明路由
+    const router = new VueRouter({
+        mode: 'history'
+    });
+    var app = new Vue({
+        el: "#main",
+        router: router,
+        data: {
+            type: 0,
+            order: 0,
+            types: [],
+            prods: [],
+            orders: [
+                { id: "0", name: "请选择：" },
+                { id: "1", name: "Best Selling" },
+                { id: "2", name: "New Arrival" },
+                { id: "3", name: "Discount" },
+                { id: "4", name: "Low Price" },
+                { id: "5", name: "High Price" },
+            ],
+
+        },
+        created: function () {
+            Vue.component('prodlist', {
+                template: "<div>A custom component!</div>"
+            });
+        },
+        methods: {
+            PageLoad: function () {
+                var url = "/Handler.ashx?type=type";
+                app.$http.get(url).then(function (data) {
+                    for (var i = 0; i < data.body.length; i++) {
+                        app.types.push({ id: data.body[i].ID, name: data.body[i].Name, href: data.body[i].Href });
+                    }
+                    this.LoadProds();
+                });
+            },
+            LoadProds: function () {
+                this.prods = [];//每次加载前初始化列表集合
+                var currUrl = window.location.href;//?id=2&orderid=1
+                if (window.location.href.split('=').length > 1) {
+                    this.type = window.location.href.split('&')[0].split('=')[1];
+                    this.order = window.location.href.split('&')[1].split('=')[1];
+                }
+                var url2 = "/Handler.ashx?type=prodlist&typeid=" + this.type + "&orderid=" + this.order;
+                app.$http.get(url2).then(function (prodlist) {
+                    for (var i = 0; i < prodlist.body.length; i++) {
+                        app.prods.push({ id: prodlist.body[i].ID, title: prodlist.body[i].Title, href: prodlist.body[i].Href, imageUrl: prodlist.body[i].ImageUrl });
+                    }
+                });
+            }
+        }
+    }).$mount('#main');
+    app.PageLoad();
+</script>
